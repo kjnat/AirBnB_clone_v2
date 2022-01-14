@@ -1,40 +1,40 @@
 #!/usr/bin/python3
-'''fabric script for task 2 0X03'''
+""" Function that compress a folder """
+from datetime import datetime
+from fabric.api import *
+import shlex
+import os
 
-from fabric.api import put, run, env
-from os.path import exists
 
-
-env.hosts = ['34.75.211.145', '3.236.217.0']
+env.hosts = ['35.231.33.237', '34.74.155.163']
+env.user = "ubuntu"
 
 
 def do_deploy(archive_path):
-    '''distributes an archive to my web servers'''
-    if not exists(archive_path):
+    """ Deploys """
+    if not os.path.exists(archive_path):
         return False
     try:
-        file_name = archive_path.split("/")[-1].split(".")[0]
+        name = archive_path.replace('/', ' ')
+        name = shlex.split(name)
+        name = name[-1]
+
+        wname = name.replace('.', ' ')
+        wname = shlex.split(wname)
+        wname = wname[0]
+
+        releases_path = "/data/web_static/releases/{}/".format(wname)
+        tmp_path = "/tmp/{}".format(name)
+
         put(archive_path, "/tmp/")
-
-        run("mkdir -p /data/web_static/releases/{}".format(file_name))
-
-        run("tar -xzf /tmp/{}.tgz -C /data/web_static/releases/{}/"
-            .format(file_name, file_name))
-
-        run('rm -rf /tmp/{}.tgz'.format(file_name))
-
-        run(('mv /data/web_static/releases/{}/web_static/* ' +
-            '/data/web_static/releases/{}/')
-            .format(file_name, file_name))
-
-        run('rm -rf /data/web_static/releases/{}/web_static'
-            .format(file_name))
-
-        run('rm -rf /data/web_static/current')
-
-        run(('ln -s /data/web_static/releases/{}/' +
-            ' /data/web_static/current')
-            .format(file_name))
+        run("mkdir -p {}".format(releases_path))
+        run("tar -xzf {} -C {}".format(tmp_path, releases_path))
+        run("rm {}".format(tmp_path))
+        run("mv {}web_static/* {}".format(releases_path, releases_path))
+        run("rm -rf {}web_static".format(releases_path))
+        run("rm -rf /data/web_static/current")
+        run("ln -s {} /data/web_static/current".format(releases_path))
+        print("New version deployed!")
         return True
-    except Exception:
+    except:
         return False
